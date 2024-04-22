@@ -1,4 +1,4 @@
-use bevy::math::bounding::{Aabb2d, BoundingVolume};
+use bevy::math::bounding::BoundingVolume;
 use bevy::prelude::*;
 
 pub mod combat;
@@ -17,7 +17,6 @@ fn main() {
         .add_event::<input::PlayerAction>()
         .add_systems(Update, show_phys_things)
         .add_systems(Update, input::handle_input)
-        .add_systems(FixedUpdate, physics::reset_player_velocity)
         .add_systems(Startup, setup)
         .run();
 }
