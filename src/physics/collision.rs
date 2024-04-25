@@ -1,6 +1,10 @@
 use bevy::math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume};
 use bevy::prelude::*;
 
+use crate::movement::{GravityAffected, Velocity};
+
+use super::DeathEvent;
+
 #[derive(Component)]
 pub struct Collider;
 
@@ -31,14 +35,13 @@ pub enum TerrainHandler {
 #[derive(Component)]
 pub struct Terrain;
 
-fn make_aabb(transform: &Transform) -> Aabb2d {
+pub fn make_aabb(transform: &Transform) -> Aabb2d {
     Aabb2d::new(
         transform.translation.truncate(),
         transform.scale.truncate() / 2.,
     )
 }
-
-fn check_dynamic_collisions(
+pub(super) fn check_dynamic_collisions(
     query: Query<(Entity, &Transform), With<Collider>>,
     mut events: EventWriter<DynamicCollision>,
 ) {
@@ -48,8 +51,7 @@ fn check_dynamic_collisions(
         }
     });
 }
-
-fn check_static_collisions(
+pub(super) fn check_static_collisions(
     actor_query: Query<(Entity, &Transform), With<Collider>>,
     static_query: Query<(Entity, &StaticCollider, Option<&Terrain>)>,
     mut static_events: EventWriter<StaticCollision>,
@@ -80,8 +82,7 @@ fn check_static_collisions(
             }
         });
 }
-
-fn terrain_collision_handler(
+pub(super) fn terrain_collision_handler(
     mut query: Query<(
         &mut Transform,
         &mut Velocity,
@@ -111,31 +112,41 @@ fn terrain_collision_handler(
         let center = terrain_hitbox.center();
         let half_x = terrain_hitbox.half_size().x;
 
+        #[cfg(feature = "log_terrain_collision")]
+        let side: &str;
+
         if center.x - half_x < closest.x && closest.x < center.x + half_x {
             // WITHOUT THIS CHECK CORNERS BECOME SUPER SNAPPY AND TERRIBLE
             if !((closest.x > center.x && (xform.translation.x > closest.x))
                 || (closest.x < center.x && (xform.translation.x < closest.x)))
             {
                 xform.translation.y = if closest.y > center.y {
+                    // top collision
                     if let Some(mut grav) = maybe_grav {
                         grav.is_airborne = false;
                     }
+
+                    /*if cfg!(feature = "log_terrain_collision") {
+                        side = "Top";
+                    }*/
+
                     closest.y + (xform.scale.y / 2.)
                 } else {
+                    // bottom collision
                     closest.y - (xform.scale.y / 2.)
                 };
             }
             vel.y = 0.;
         } else {
-            // Ditto
+            // Ditto but for x axis stuff
             if !((closest.y > center.y && (xform.translation.y > closest.y))
                 || (closest.y < center.y && (xform.translation.y < closest.y)))
             {
                 xform.translation.x = if closest.x > center.x {
-                    info!("Right collision!");
+                    // right collision
                     closest.x + (xform.scale.x / 2.)
                 } else {
-                    info!("Left collision!");
+                    // left collision
                     closest.x - (xform.scale.x / 2.)
                 };
             }

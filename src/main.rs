@@ -2,13 +2,29 @@ use bevy::math::bounding::BoundingVolume;
 use bevy::prelude::*;
 
 pub mod combat;
+pub mod debug;
 pub mod input;
 pub mod physics;
+pub mod view;
 
+use collision::*;
+use movement::*;
 use physics::*;
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Bundle)]
+pub struct PlayerBundle(
+    pub SpriteBundle,
+    pub Velocity,
+    pub TerrainHandler,
+    pub GravityAffected,
+    pub Collider,
+    pub Player,
+    pub Facing,
+);
+impl PlayerBundle {}
 
 fn main() {
     App::new()
@@ -16,7 +32,7 @@ fn main() {
         .add_event::<combat::DeathEvent>()
         .add_event::<input::PlayerAction>()
         .add_systems(Update, show_phys_things)
-        .add_systems(Update, input::handle_input)
+        .add_systems(Update, view::sync_player_camera)
         .add_systems(Startup, setup)
         .run();
 }
@@ -47,6 +63,7 @@ fn setup(mut commands: Commands) {
         GravityAffected { is_airborne: true },
         Collider,
         Player,
+        Facing::Right,
     ));
 }
 

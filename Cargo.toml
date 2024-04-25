@@ -3,6 +3,14 @@ name = "loop_game"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+show_hitbox = []
+log_terrain_collision = []
+log_dynamic_collision = []
+log_static_collision = []
+log_all_collision = []
+physics_debug = ["show_hitbox", "log_all_collision"]
+
 [dependencies]
 bevy = "0.13.2"
 
